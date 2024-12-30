@@ -78,36 +78,97 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}, interval);
 	// File system watcher to track changes only when the file is saved
-	const fileWatcher = vscode.workspace.createFileSystemWatcher("/*");
-	fileWatcher.onDidCreate((uri) => trackChange("added", uri.fsPath));
-	fileWatcher.onDidDelete((uri) => trackChange("deleted", uri.fsPath));
+	const fileWatcher = vscode.workspace.createFileSystemWatcher("**/**");
+	fileWatcher.onDidCreate((uri) => trackChange("Added", uri.fsPath));
+	fileWatcher.onDidDelete((uri) => trackChange("Deleted", uri.fsPath));
 
-	let previousContent: string | null = null;
+	let previousContent: { [filePath: string]: string } = {};
 
 	vscode.workspace.onDidSaveTextDocument((document) => {
 		const filePath = document.uri.fsPath;
 		const newContent = document.getText(); // Get the content of the file after saving
 
 		// If there was no previous content stored (first time saving), initialize it
-		if (previousContent === null) {
-			previousContent = newContent;
+		if (!previousContent[filePath]) {
+			// trackChange(`Modified file`, filePath, newContent);
+			previousContent[filePath] = newContent;
 			return; // Skip the comparison for the first save
 		}
 
 		// Compare old and new content line by line
-		const oldLines = previousContent.split("\n");
+		const oldLines = previousContent[filePath].split("\n");
 		const newLines = newContent.split("\n");
+		var modified = [];
+		var added = [];
+		var deleted = [];
 
 		for (let i = 0; i < Math.max(oldLines.length, newLines.length); i++) {
 			if (oldLines[i] !== newLines[i]) {
 				const startLine = i + 1; // 1-based line index
-				const changedText = newLines[i] || ""; // Text of the changed line (empty if deleted)
-				trackChange(`Modified line ${startLine}`, filePath, changedText);
+				if (!oldLines[i] && newLines[i]) {
+					// Detect added lines
+					let line = i;
+					while (!oldLines[line] && newLines[line]) {
+						line++;
+					}
+					var newSegContent = "";
+					for (let j = i; j < line; j++) {
+						newSegContent += newLines[j] + "\n";
+					}
+					added.push(`Added from line ${i + 1} to ${line}\n${newSegContent}`);
+					i = line - 1; // Adjust the index to skip the processed lines
+				} else if (!newLines[i] && oldLines[i]) {
+					// Detect deleted lines
+					let line = i;
+					while (oldLines[line] && !newLines[line]) {
+						line++;
+					}
+					var oldSegContent = "";
+					for (let j = i; j < line; j++) {
+						oldSegContent += oldLines[j] + "\n";
+					}
+					deleted.push(
+						`Deleted from line ${i + 1} to ${line}\n${oldSegContent}`
+					);
+					i = line - 1; // Adjust the index to skip the processed lines
+				} else if (oldLines[i] && newLines[i]) {
+					// Detect modified lines
+					let line = i;
+					while (
+						oldLines[line] &&
+						newLines[line] &&
+						oldLines[line] !== newLines[line]
+					) {
+						line++;
+					}
+					var newSegContent = "";
+					var oldSegContent = "";
+					for (let j = i; j < line; j++) {
+						newSegContent += newLines[j] + "\n";
+						oldSegContent += oldLines[j] + "\n";
+					}
+					modified.push(
+						`Modified from line ${
+							i + 1
+						} to ${line}\n**FROM**\n${oldSegContent}**TO**\n${newSegContent}`
+					);
+					i = line - 1; // Adjust the index to skip the processed lines
+				}
 			}
 		}
 
+		if (added.length > 0) {
+			trackChange(`Added lines`, filePath, added.join("\n"));
+		}
+		if (deleted.length > 0) {
+			trackChange(`Deleted lines`, filePath, deleted.join("\n"));
+		}
+		if (modified.length > 0) {
+			trackChange(`Modified lines`, filePath, modified.join("\n"));
+		}
+
 		// Store the new content as the previous content for the next save
-		previousContent = newContent;
+		previousContent[filePath] = newContent;
 	});
 
 	context.subscriptions.push(fileWatcher);
@@ -163,10 +224,14 @@ async function commitAndPushChanges(repoUrl: string, githubToken: string) {
 function generateLogEntry(
 	changes: { filePath: string; content: string; action: string }[]
 ): string {
-	const timestamp = new Date().toISOString();
+	const timestamp = new Date().toLocaleString();
 	let logEntry = `\n--- Log Entry at ${timestamp} ---\n`;
 	for (const change of changes) {
-		logEntry += `Action: ${change.action}, File: ${change.filePath}, Content: ${change.content}\n`;
+		if (change.action !== "Modified") {
+			logEntry += `${change.action}, file ${change.filePath}\n`;
+		} else {
+			logEntry += `${change.action}, in file ${change.filePath}: \nChanges: ${change.content}\n`;
+		}
 	}
 	return logEntry;
 }
