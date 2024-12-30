@@ -158,13 +158,13 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 
 		if (added.length > 0) {
-			trackChange(`Added lines`, filePath, added.join("\n"));
+			trackChange(`Modified`, filePath, added.join("\n"));
 		}
 		if (deleted.length > 0) {
-			trackChange(`Deleted lines`, filePath, deleted.join("\n"));
+			trackChange(`Modified`, filePath, deleted.join("\n"));
 		}
 		if (modified.length > 0) {
-			trackChange(`Modified lines`, filePath, modified.join("\n"));
+			trackChange(`Modified`, filePath, modified.join("\n"));
 		}
 
 		// Store the new content as the previous content for the next save
