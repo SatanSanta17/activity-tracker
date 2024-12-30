@@ -1,71 +1,101 @@
-# activity-tracker README
+# Activity Tracker for VS Code
 
-This is the README for your extension "activity-tracker". After writing up a brief description, we recommend including the following sections.
+**Activity Tracker** is a Visual Studio Code extension designed to track file changes and log them in a GitHub repository. It helps developers maintain a chronological record of their development journey by committing changes only when a file is saved.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- Tracks file changes (add, modify, delete) and logs them with relevant details.
+- Logs changes to a centralized GitHub repository.
+- Configurable auto-commit interval (default: 30 minutes).
+- Supports tracking changes only upon saving files.
+- Prompts the user to set up GitHub credentials (repository URL and personal access token) on first activation.
+- Appends changes to a single `logs.txt` file in the repository.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Before using this extension, ensure the following:
 
-## Extension Settings
+- A GitHub repository to store the logs.
+- A GitHub Personal Access Token (PAT) with `repo` permissions.
+- Visual Studio Code installed on your system.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+## Installation
 
-For example:
+1. Clone this repository or download the source code.
+2. Open the project folder in Visual Studio Code.
+3. Run the `npm install` command in the terminal to install dependencies.
+4. Package the extension using `vsce package` (requires the [VSCE CLI](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)).
+5. Install the `.vsix` package in VS Code by navigating to:
+   - `Extensions` > `Install from VSIX...`
 
-This extension contributes the following settings:
+## Configuration
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+1. On first activation, the extension will prompt you to provide:
+   - GitHub Repository URL (e.g., `https://github.com/username/repository.git`)
+   - GitHub Personal Access Token (PAT)
+2. The provided credentials are saved in the VS Code global settings for future use.
 
-## Known Issues
+## Usage
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- **Track Changes:** The extension listens for file changes in the workspace.
+  - Adds tracked changes to a buffer when files are saved.
+  - Commits and pushes the changes to the GitHub repository at the configured interval.
+- **Modify Commit Interval:** Update the commit interval by changing the `autoCommitInterval` setting in your VS Code configuration (value in minutes).
 
-## Release Notes
+### Example Configuration
 
-Users appreciate release notes as you update your extension.
+```json
+{
+	"commonGitHubRepo": "https://github.com/username/repository.git",
+	"githubPersonalAccessToken": "your-personal-access-token",
+	"autoCommitInterval": 30
+}
+```
 
-### 1.0.0
+## How It Works
 
-Initial release of ...
+1. **File Change Tracking:**
 
-### 1.0.1
+   - Tracks added, modified, and deleted files.
+   - Logs only the lines modified during the save event.
 
-Fixed issue #.
+2. **GitHub Integration:**
 
-### 1.1.0
+   - Appends changes to `logs.txt` in the remote repository.
+   - Uses GitHub's API to fetch the file’s `sha` for updates.
 
-Added features X, Y, and Z.
+3. **Commit and Push:**
+   - At the end of each interval, pushes the accumulated changes to the GitHub repository.
 
----
+## Developer Guide
 
-## Following extension guidelines
+### Important Files
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+- **`extension.ts`**: The core logic of the extension.
+- **`package.json`**: Contains metadata and configurations for the extension.
+- **`README.md`**: Documentation file.
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+### Commands for Development
 
-## Working with Markdown
+- Run the extension in debug mode:
+  ```bash
+  npm run watch
+  ```
+- Test the extension in a new VS Code instance:
+  ```bash
+  F5 (Debug in VS Code)
+  ```
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+## Contribution
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+Contributions are welcome! Please follow these steps to contribute:
 
-## For more information
+1. Fork the repository.
+2. Create a new branch (`feature/your-feature`).
+3. Commit your changes.
+4. Push to the branch.
+5. Open a pull request.
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+## Contact
 
-**Enjoy!**
+If you encounter any issues or have suggestions for improvement, feel free to create an issue or reach out at burhanuddinchital25151@gmail.com.
